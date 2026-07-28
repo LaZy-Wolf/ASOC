@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  /* Deep blue-black, warm paper text. Amber is reserved for one meaning only:
+     a human is needed. Teal marks evidence. Red is reserved for P1. */
+  --color-ink: #0e1218;
+  --color-surface: #161b23;
+  --color-raised: #1d232d;
+  --color-line: #2a323f;
+  --color-paper: #e7e2d9;
+  --color-muted: #8792a3;
+  --color-amber: #e5a03c;
+  --color-teal: #45b3a3;
+  --color-danger: #d9634e;
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  /* data columns and scores must not jitter as digits change */
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-amber);
+  color: var(--color-ink);
+}
+
+/* the one piece of ambient motion: the active pipeline stage */
+@keyframes stage-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.stage-active {
+  animation: stage-pulse 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-active {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
