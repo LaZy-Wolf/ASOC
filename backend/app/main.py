@@ -16,7 +16,8 @@ from app.rag.retrieve import Hit, retrieve
 app = FastAPI(title="ASOC")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    # any localhost port: the dev server moves when another project is already on 3000
+    allow_origin_regex=r"http://localhost:\d+",
     allow_methods=["*"],
     allow_headers=["*"],
 )
