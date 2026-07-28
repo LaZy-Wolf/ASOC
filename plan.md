@@ -2,6 +2,35 @@
 
 **Build plan + design spec.** Approved 2026-07-28.
 
+## Progress
+
+| Phase | Status | Verified by |
+|---|---|---|
+| P0 environment | done | `docker compose up` + `/health` 200, Qdrant reachable |
+| P1 skeleton RAG | backend done, UI pending install | 138 chunks indexed; cited answer returned over SSE |
+| P2 MCP server | done | 13 tests pass, incl. a real MCP protocol round trip |
+| P3 production RAG | not started | |
+| P4 orchestration + HITL | not started | |
+| P5 CrewAI comparison | not started | |
+| P6 voice | not started | |
+
+**Deviations from the plan as written, and why:**
+
+- **No shadcn/ui.** The chat screen needs a textarea, a list, and a rail. The component library
+  would have been more files than the components.
+- **Tailwind v4**, CSS-first `@theme`, no `tailwind.config`.
+- **Langfuse v2, not v3.** v3 self-host is six containers (clickhouse, redis, minio, worker);
+  v2 is two and traces LangGraph identically.
+- **Qdrant pinned to v1.18.1** to match `qdrant-client`. Storage written by v1.12.4 is not
+  forward-compatible — the server panics on load. Bumping means deleting `qdrant_storage`
+  and re-running `python -m app.rag.index`.
+- **Heading-aware chunking landed in P1**, not P3. Same effort either way, and it means the P3
+  eval delta measures retrieval strategy alone rather than chunking plus strategy.
+
+**Recorded P1 baseline failure** (the case P3 has to fix): for *"my VPN connects then drops after
+a minute"*, dense-only top-k ranks `guide-vpn-setup#0` first — the wrong document, which merely
+contains the words "VPN used to work and has stopped" — and puts the correct chunk at rank 5.
+
 A single portfolio project demonstrating four in-demand 2026 skills at production depth:
 **production RAG**, a **custom MCP server**, **multi-agent orchestration** (LangGraph state machine
 + human-in-the-loop), and a **voice lane**. Runs entirely locally on free resources.
