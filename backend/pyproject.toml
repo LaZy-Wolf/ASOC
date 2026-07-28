@@ -9,7 +9,15 @@ dependencies = [
     "uvicorn[standard]>=0.32",
     "pydantic-settings>=2.6",
     "qdrant-client>=1.12",
+    "pyyaml>=6.0",
+    "fastembed>=0.4",
+    "groq>=0.13",
+    "google-genai>=0.3",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8.3"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
