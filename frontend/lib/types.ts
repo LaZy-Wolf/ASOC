@@ -8,8 +8,27 @@ export type Citation = {
   text: string;
 };
 
-export type Stage = "retrieve" | "answer";
-export type StageState = "pending" | "active" | "done";
+/** Graph nodes, in the order the machine visits them. */
+export type NodeName =
+  | "router"
+  | "retrieve"
+  | "grade"
+  | "plan"
+  | "approve"
+  | "execute"
+  | "respond";
+
+export type NodeState = "active" | "done";
+
+export type ToolCall = { name: string; arguments: Record<string, unknown> };
+
+export type ToolResult = {
+  ok: boolean;
+  tool: string;
+  arguments: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+};
 
 export type Entry = {
   id: string;
@@ -17,9 +36,16 @@ export type Entry = {
   at: string; // HH:MM:SS
   text: string;
   citations: Citation[];
-  stages: Record<Stage, StageState>;
+  nodes: { name: NodeName; state: NodeState }[];
   route?: string;
   topScore?: number | null;
   confident?: boolean;
+  plan?: ToolCall[];
+  pending?: ToolCall[];
+  awaitingApproval?: boolean;
+  decision?: "approve" | "reject";
+  executed?: ToolResult[];
+  guardFlags?: string[];
+  blocked?: string[];
   error?: string;
 };

@@ -10,7 +10,7 @@
 | P1 skeleton RAG | done | 138 chunks indexed; cited answer streamed to the UI |
 | P2 MCP server | done | 13 tests pass, incl. a real MCP protocol round trip |
 | P3 production RAG | done | `eval/RESULTS.md`: recall@5 0.864 -> 0.932, refusal recall 0.900 |
-| P4 orchestration + HITL | not started | |
+| P4 orchestration + HITL | done | write paused across a real process restart, then approved by a different PID |
 | P5 CrewAI comparison | not started | |
 | P6 voice | not started | |
 
@@ -47,6 +47,22 @@ as [1], with a 9-point score gap to the runner-up.
 - **Reranking's real justification is the score, not the ranking.** RRF is rank-derived, so an
   unanswerable question can score the maximum. Only a cross-encoder gives an absolute number to
   threshold on, so the refusal gate cannot exist without it.
+
+**What P4 changed about the plan:**
+
+- **No LangChain.** `langchain-mcp-adapters` plus `langchain-groq` would have meant two LLM code
+  paths and a framework wrapper over a protocol the project is meant to demonstrate. LangGraph
+  nodes are plain callables, so the executor calls the MCP server directly through `fastmcp.Client`
+  over stdio, with tool schemas discovered at runtime and fed to Groq's native tool calling.
+- **Langfuse via `@observe`, not its LangChain callback handler.** The handler requires the full
+  `langchain` package. The native decorator gives one span per node with no framework in between.
+- **Tracing is optional at runtime.** Bad or missing Langfuse keys log a warning and the graph runs
+  untraced. An agent that stops answering because its telemetry sink is unreachable is worse than
+  one you cannot see into.
+- **The safety property is tested structurally, not behaviourally.** `test_graph.py` asserts that
+  every tool in `WRITE_TOOLS` routes through `approve`, parameterised per tool, with no LLM in the
+  loop. "No write reaches the database without a human" should not be a property that holds only
+  most of the time.
 
 A single portfolio project demonstrating four in-demand 2026 skills at production depth:
 **production RAG**, a **custom MCP server**, **multi-agent orchestration** (LangGraph state machine

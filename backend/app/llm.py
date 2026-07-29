@@ -7,6 +7,7 @@ is abandoned once tokens have reached the client, since replaying would duplicat
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Iterator
 
@@ -65,3 +66,39 @@ def stream_chat(system: str, user: str) -> Iterator[str]:
 
     log.warning("all groq keys exhausted, falling back to gemini")
     yield from _gemini_stream(system, user)
+
+
+def propose_tool_calls(system: str, user: str, tools: list[dict]) -> list[dict]:
+    """Ask the model which tools to call. Returns [{name, arguments}], possibly empty.
+
+    Groq only: tool-calling schemas are not portable to the Gemini SDK, and silently degrading to
+    a text answer when a caller asked for actions would be worse than failing loudly. Key rotation
+    still applies — this is a single non-streaming call, so a 429 can be retried cleanly.
+    """
+    last: Exception | None = None
+    for index, key in enumerate(groq_keys()):
+        try:
+            message = (
+                Groq(api_key=key)
+                .chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    tools=tools,
+                    tool_choice="auto",
+                    temperature=0,
+                )
+                .choices[0]
+                .message
+            )
+            return [
+                {"name": call.function.name, "arguments": json.loads(call.function.arguments)}
+                for call in (message.tool_calls or [])
+            ]
+        except RateLimitError as exc:
+            last = exc
+            log.warning("groq key %d rate limited during planning, rotating", index + 1)
+
+    raise RuntimeError("all groq keys rate limited while planning tool calls") from last
