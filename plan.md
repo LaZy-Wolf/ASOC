@@ -364,6 +364,25 @@ voice, ticket lands in SQLite.
 
 ---
 
+## 12b. Running it
+
+```bash
+docker compose up -d                                                  # qdrant + langfuse
+cd backend  && ./.venv/Scripts/python.exe -m app.rag.index            # once, after corpus changes
+cd backend  && ./.venv/Scripts/python.exe -m uvicorn app.main:app --port 8001
+cd frontend && npm run dev                                            # http://localhost:3002
+```
+
+| Service | Port |
+|---|---|
+| Frontend | 3002 |
+| Backend | 8001 |
+| Langfuse | 3001 |
+| Qdrant | 6333 |
+
+Backend and frontend sit on 8001/3002 rather than 8000/3000 because this machine runs another
+project on the usual ports. CORS accepts any localhost port, so moving them again costs nothing.
+
 ## 13. Environment variables
 
 ```
