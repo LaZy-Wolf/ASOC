@@ -30,7 +30,17 @@ from qdrant_client.models import (
 from app.config import settings
 from app.rag.index import CACHE_DIR, COLLECTION, DENSE_MODEL, SPARSE_MODEL
 
-CANDIDATES = 25  # per retriever, before fusion
+# Two different limits, deliberately separate. PREFETCH is how deep each retriever goes before
+# fusion — cheap, so be generous. RERANK_CANDIDATES is how many fused results reach the
+# cross-encoder — expensive and linear, so this is the latency dial.
+#
+# Measured on the golden set with bge-reranker-base (recall@5 / p50 ms):
+#   5 -> 0.901 / 553    8 -> 0.932 / 1048    12 -> 0.938 / 1800
+#  18 -> 0.951 / 3177   25 -> 0.938 / 4661
+# Not monotonic: past ~18 the extra candidates are distractors the reranker misranks.
+# 8 is the knee — most of the quality for a fifth of the 18-candidate latency.
+PREFETCH = 25
+RERANK_CANDIDATES = 8
 
 
 @dataclass
@@ -96,7 +106,9 @@ def dense_retrieve(query: str, top_k: int = 5, doc_type: str | None = None) -> l
     return _to_hits(result.points)
 
 
-def hybrid_retrieve(query: str, top_k: int = CANDIDATES, doc_type: str | None = None) -> list[Hit]:
+def hybrid_retrieve(
+    query: str, top_k: int = RERANK_CANDIDATES, doc_type: str | None = None
+) -> list[Hit]:
     """Dense + BM25 candidates fused with RRF inside Qdrant."""
     dense_vec = next(iter(_dense().query_embed(query))).tolist()
     sparse_raw = next(iter(_sparse().query_embed(query)))
@@ -108,8 +120,8 @@ def hybrid_retrieve(query: str, top_k: int = CANDIDATES, doc_type: str | None = 
     result = _client().query_points(
         COLLECTION,
         prefetch=[
-            Prefetch(query=dense_vec, using="dense", limit=CANDIDATES, filter=where),
-            Prefetch(query=sparse_vec, using="bm25", limit=CANDIDATES, filter=where),
+            Prefetch(query=dense_vec, using="dense", limit=PREFETCH, filter=where),
+            Prefetch(query=sparse_vec, using="bm25", limit=PREFETCH, filter=where),
         ],
         query=FusionQuery(fusion=Fusion.RRF),
         limit=top_k,

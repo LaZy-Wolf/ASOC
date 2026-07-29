@@ -3,11 +3,25 @@
 Routing is a keyword heuristic, not an LLM call. A classifier round trip would cost more latency
 than the retrieval it is routing, and these three classes are separable by surface form.
 
-The confidence threshold was calibrated, not guessed: over six answerable and six unanswerable
-questions, top rerank scores were -1.9..+7.8 and -9.4..-11.3 respectively. -5.0 sits in the 7.5
-point gap between the two clusters, with margin on each side. Recalibrate whenever the corpus or
-the reranker changes — `eval/retrieval_eval.py` reports refusal precision so a bad threshold shows
-up as a number rather than a surprise in production.
+The confidence threshold comes from a sweep over the full golden set, not from eyeballing a
+handful of queries. An early six-question calibration suggested the two score distributions were
+cleanly separable; across 91 questions they are not — answerable tops range -7.5..+7.0 and
+unanswerable -10.0..-4.1, and they overlap. There is no threshold with both perfect refusal and
+zero false refusal, so it is a chosen operating point:
+
+    threshold   refusal recall   false refusal
+      -6.0          0.600            0.037
+      -5.0          0.900            0.062
+      -4.0          1.000            0.136
+
+-5.0 is chosen because the errors are not symmetric. A false refusal costs the user an
+unnecessary "I don't know" on a question the corpus could have answered. A missed refusal hands
+the model weak context for a question the corpus cannot answer, and inviting it to invent a
+security or access policy is the worse outcome. -5.0 also strictly dominates -5.5, which refuses
+fewer unanswerable questions at identical cost.
+
+Rerun `python -m eval.retrieval_eval` after any corpus, chunking, or reranker change: it reports
+both numbers, so a stale threshold shows up as a metric rather than as a surprise in production.
 """
 
 from __future__ import annotations

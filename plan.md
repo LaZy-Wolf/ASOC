@@ -7,9 +7,9 @@
 | Phase | Status | Verified by |
 |---|---|---|
 | P0 environment | done | `docker compose up` + `/health` 200, Qdrant reachable |
-| P1 skeleton RAG | backend done, UI pending install | 138 chunks indexed; cited answer returned over SSE |
+| P1 skeleton RAG | done | 138 chunks indexed; cited answer streamed to the UI |
 | P2 MCP server | done | 13 tests pass, incl. a real MCP protocol round trip |
-| P3 production RAG | not started | |
+| P3 production RAG | done | `eval/RESULTS.md`: recall@5 0.864 -> 0.932, refusal recall 0.900 |
 | P4 orchestration + HITL | not started | |
 | P5 CrewAI comparison | not started | |
 | P6 voice | not started | |
@@ -27,9 +27,26 @@
 - **Heading-aware chunking landed in P1**, not P3. Same effort either way, and it means the P3
   eval delta measures retrieval strategy alone rather than chunking plus strategy.
 
-**Recorded P1 baseline failure** (the case P3 has to fix): for *"my VPN connects then drops after
-a minute"*, dense-only top-k ranks `guide-vpn-setup#0` first — the wrong document, which merely
-contains the words "VPN used to work and has stopped" — and puts the correct chunk at rank 5.
+**Recorded P1 baseline failure, and its P3 fix.** For *"my VPN connects then drops after a
+minute"*, dense-only top-k ranked the wrong document first — the VPN *setup* guide, which merely
+contains the words "VPN used to work and has stopped" — burying the correct chunk at rank 3, with
+only 0.031 of score spread across all five hits. Hybrid + rerank now returns it at rank 1, cited
+as [1], with a 9-point score gap to the runner-up.
+
+**What P3 measurement changed about the plan:**
+
+- **Reranker is `BAAI/bge-reranker-base`, not the small ONNX model.** `ms-marco-MiniLM-L-6-v2`
+  (80MB) was tried first as the sensible CPU default and was dominated outright — against plain
+  hybrid it improved 12 cases, degraded 12, and left 57 unchanged. Candidate count turned out to
+  be a much stronger latency lever than model size.
+- **8 rerank candidates, not 25.** The sweep is not monotonic: recall@5 peaks at 18 candidates
+  (0.951) and *falls* at 25 (0.938) as extra distractors arrive. 8 is the knee — 0.932 at a fifth
+  of the 18-candidate latency.
+- **The refusal threshold is an operating point, not a separation.** Answerable and unanswerable
+  score distributions overlap, so `RESULTS.md` publishes the whole curve and the chosen point.
+- **Reranking's real justification is the score, not the ranking.** RRF is rank-derived, so an
+  unanswerable question can score the maximum. Only a cross-encoder gives an absolute number to
+  threshold on, so the refusal gate cannot exist without it.
 
 A single portfolio project demonstrating four in-demand 2026 skills at production depth:
 **production RAG**, a **custom MCP server**, **multi-agent orchestration** (LangGraph state machine

@@ -55,7 +55,14 @@ export function LogEntry({ entry, onCite }: { entry: Entry; onCite: (n: number |
           {entry.at} {entry.role}
         </span>
 
-        {!isYou && <TraceStrip stages={entry.stages} />}
+        {!isYou && (
+          <TraceStrip
+            stages={entry.stages}
+            route={entry.route}
+            topScore={entry.topScore}
+            confident={entry.confident}
+          />
+        )}
 
         {entry.error ? (
           <p className="rounded-sm border border-danger/50 bg-danger/10 p-2.5 text-sm text-danger">

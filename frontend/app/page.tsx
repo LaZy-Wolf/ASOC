@@ -73,7 +73,14 @@ export default function Console() {
     abort.current = new AbortController();
     try {
       for await (const event of chatStream(text, abort.current.signal)) {
-        if (event.type === "citations") {
+        if (event.type === "route") {
+          patch((e) => ({
+            ...e,
+            route: event.route,
+            topScore: event.top_score,
+            confident: event.confident,
+          }));
+        } else if (event.type === "citations") {
           patch((e) => ({
             ...e,
             citations: event.citations,

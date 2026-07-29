@@ -111,7 +111,38 @@ def cell(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.3f}"
 
 
-def render(rows: list[dict], cases: list[Case]) -> str:
+def threshold_curve(cases: list[Case]) -> tuple[list[tuple[float, float, float]], dict]:
+    """Refusal recall vs false refusal across candidate thresholds, plus signal separability.
+
+    Also records the top-1 score range of each retriever, which is what decides whether a signal
+    can carry a confidence gate at all.
+    """
+    rerank_ans, rerank_unans = [], []
+    rrf_ans, rrf_unans = [], []
+
+    for case in cases:
+        fused = hybrid_retrieve(case.q)
+        top = rerank(case.q, list(fused), top_n=1)[0]
+        unanswerable = case.type == "unanswerable"
+        (rerank_unans if unanswerable else rerank_ans).append(top.rerank_score)
+        (rrf_unans if unanswerable else rrf_ans).append(fused[0].score)
+
+    curve = [
+        (
+            t / 2,
+            sum(1 for s in rerank_unans if s < t / 2) / len(rerank_unans),
+            sum(1 for s in rerank_ans if s < t / 2) / len(rerank_ans),
+        )
+        for t in range(-16, -5)
+    ]
+    ranges = {
+        "rerank": (min(rerank_ans), max(rerank_ans), min(rerank_unans), max(rerank_unans)),
+        "rrf": (min(rrf_ans), max(rrf_ans), min(rrf_unans), max(rrf_unans)),
+    }
+    return curve, ranges
+
+
+def render(rows: list[dict], cases: list[Case], curve, ranges) -> str:
     unanswerable = sum(1 for c in cases if c.type == "unanswerable")
     multi_hop = sum(1 for c in cases if c.type == "multi_hop")
     baseline, best = rows[0], rows[-1]
@@ -134,17 +165,24 @@ def render(rows: list[dict], cases: list[Case]) -> str:
             f"| {row['p50']:.0f} | {row['p95']:.0f} |"
         )
 
+    fusion = rows[1]
     delta_recall = best["recall"] - baseline["recall"]
     delta_mrr = best["mrr"] - baseline["mrr"]
+    fusion_share = (fusion["recall"] - baseline["recall"]) / delta_recall if delta_recall else 0.0
+    slowdown = best["p50"] / baseline["p50"] if baseline["p50"] else 0.0
+
     lines += [
         "",
         "## Reading this",
         "",
         f"- **recall@5 {baseline['recall']:.3f} -> {best['recall']:.3f}** "
         f"({delta_recall:+.3f}) from the dense baseline to hybrid + rerank.",
-        f"- **MRR {baseline['mrr']:.3f} -> {best['mrr']:.3f}** ({delta_mrr:+.3f}). MRR moves more "
-        "than recall because reranking mostly reorders chunks that hybrid retrieval had already "
-        "found, rather than finding new ones.",
+        f"- **MRR {baseline['mrr']:.3f} -> {best['mrr']:.3f}** ({delta_mrr:+.3f}).",
+        f"- Fusion accounts for {fusion_share:.0%} of the recall gain and costs nothing "
+        f"({baseline['p50']:.0f}ms -> {fusion['p50']:.0f}ms). Reranking supplies the remaining "
+        f"{1 - fusion_share:.0%} and is {slowdown:.0f}x slower than the baseline. If latency ever "
+        "matters more than the last few points of recall, dropping the reranker is the obvious "
+        "lever — at the cost of the refusal gate, for the reason below.",
         "- **refusal recall** is the share of unanswerable questions correctly declined. Only the "
         "reranked config has a calibrated score to threshold on, so the others report n/a rather "
         "than a number derived from an arbitrary cutoff.",
@@ -154,6 +192,38 @@ def render(rows: list[dict], cases: list[Case]) -> str:
         "",
         "Gold labels are (document, heading substring) pairs, so re-chunking does not silently "
         "invalidate the set.",
+        "",
+        "## Why rerank at all, when fusion is free",
+        "",
+        "Reranking buys real but modest recall for a large latency bill. Its second job is what "
+        "makes it non-optional here: it is the only stage that produces an **absolute** relevance "
+        "score. RRF scores a "
+        "document from its rank positions, so the top result scores about the same whether the "
+        "corpus answers the question or not — the top-1 ranges below overlap completely, and an "
+        "unanswerable question can reach the maximum score. Without a cross-encoder there is no "
+        "signal to threshold, and the refusal gate cannot exist.",
+        "",
+        "| signal | answerable top-1 | unanswerable top-1 | usable as a confidence gate |",
+        "|---|---|---|---|",
+        f"| RRF (hybrid) | {ranges['rrf'][0]:.3f} .. {ranges['rrf'][1]:.3f} "
+        f"| {ranges['rrf'][2]:.3f} .. {ranges['rrf'][3]:.3f} | no |",
+        f"| cross-encoder | {ranges['rerank'][0]:+.3f} .. {ranges['rerank'][1]:+.3f} "
+        f"| {ranges['rerank'][2]:+.3f} .. {ranges['rerank'][3]:+.3f} | yes, with a chosen "
+        "operating point |",
+        "",
+        "## Choosing the refusal threshold",
+        "",
+        "The two distributions overlap, so no threshold gives perfect refusal at zero false "
+        "refusal. This is the operating curve:",
+        "",
+        "| threshold | refusal recall | false refusal |",
+        "|---|---|---|",
+        *[f"| {t:+.1f} | {rr:.3f} | {fr:.3f} |" for t, rr, fr in curve],
+        "",
+        f"Shipping **{CONFIDENCE_THRESHOLD:+.1f}**. The errors are not symmetric: a false refusal "
+        "costs an unnecessary \"I don't know\"; a missed refusal invites the model to invent an "
+        "access or security policy. The second is worse, so the operating point leans toward "
+        "refusing.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -173,7 +243,10 @@ def main() -> int:
         print(f"  running {name}...")
         rows.append(run_config(name, fn, cases, scored))
 
-    RESULTS.write_text(render(rows, cases), encoding="utf-8")
+    print("  sweeping refusal threshold...")
+    curve, ranges = threshold_curve(cases)
+
+    RESULTS.write_text(render(rows, cases, curve, ranges), encoding="utf-8")
     print(f"\nwrote {RESULTS}\n")
     for row in rows:
         print(

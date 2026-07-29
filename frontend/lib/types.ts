@@ -18,5 +18,8 @@ export type Entry = {
   text: string;
   citations: Citation[];
   stages: Record<Stage, StageState>;
+  route?: string;
+  topScore?: number | null;
+  confident?: boolean;
   error?: string;
 };

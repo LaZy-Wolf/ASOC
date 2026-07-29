@@ -1,4 +1,11 @@
 type ServerEvent =
+  | {
+      type: "route";
+      route: string;
+      doc_type: string | null;
+      top_score: number | null;
+      confident: boolean;
+    }
   | { type: "citations"; citations: import("./types").Citation[] }
   | { type: "token"; text: string }
   | { type: "error"; message: string }

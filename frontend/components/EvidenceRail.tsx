@@ -3,9 +3,14 @@
 import { useState } from "react";
 import type { Citation } from "@/lib/types";
 
+/** Cross-encoder logits are unbounded and often negative, so they cannot drive a width directly.
+ *  Scores are mapped through a logistic curve into 0..1 purely for the bar; the number printed
+ *  next to it stays the raw score, because that is the value the refusal threshold compares. */
+const barWidth = (score: number) => `${Math.round((1 / (1 + Math.exp(-score / 3))) * 100)}%`;
+
 /**
- * Retrieval made visible. The score bar is the point: you can see how confident the
- * retriever was, and after P3 you can watch the same question score better.
+ * Retrieval made visible. The score bar is the point: you can see how strongly the reranker
+ * backed each chunk, and where the answer actually came from.
  */
 export function EvidenceRail({
   citations,
@@ -53,14 +58,14 @@ export function EvidenceRail({
                 <span
                   aria-hidden
                   className="h-1 flex-1 overflow-hidden rounded-full bg-line"
-                  title={`similarity ${c.score}`}
+                  title={`rerank score ${c.score}`}
                 >
-                  <span
-                    className="block h-full bg-teal"
-                    style={{ width: `${Math.round(c.score * 100)}%` }}
-                  />
+                  <span className="block h-full bg-teal" style={{ width: barWidth(c.score) }} />
                 </span>
-                <span className="font-mono text-[10px] text-muted">{c.score.toFixed(3)}</span>
+                <span className="font-mono text-[10px] text-muted">
+                  {c.score > 0 ? "+" : ""}
+                  {c.score.toFixed(2)}
+                </span>
               </div>
             </button>
 
