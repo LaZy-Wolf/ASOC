@@ -1,0 +1,91 @@
+{"q": "My VPN connects and then drops about a minute later", "type": "lookup", "gold": [["guide-vpn-troubleshooting", "connects, then drops"]]}
+{"q": "I never got the push notification to approve my login", "type": "lookup", "gold": [["guide-vpn-troubleshooting", "MFA push never arrives"]]}
+{"q": "VPN says my password is wrong but I know it is right", "type": "lookup", "gold": [["guide-vpn-troubleshooting", "Password rejected immediately"]]}
+{"q": "I am on the VPN but the internal wiki will not load", "type": "lookup", "gold": [["guide-vpn-troubleshooting", "internal sites do not resolve"]]}
+{"q": "The tunnel is really slow today, everything crawls", "type": "lookup", "gold": [["guide-vpn-troubleshooting", "severe slowness"]]}
+{"q": "Half my team cannot get on the VPN at the same time", "type": "lookup", "gold": [["guide-vpn-troubleshooting", "everyone is affected"]]}
+{"q": "I just joined, how do I get connected to the VPN the first time?", "type": "lookup", "gold": [["guide-vpn-setup", "First connection"]]}
+{"q": "Which VPN region profile should I pick?", "type": "lookup", "gold": [["guide-vpn-setup", "First connection"]]}
+{"q": "Why does my personal browsing not go through the company tunnel?", "type": "lookup", "gold": [["guide-vpn-setup", "Split tunnel"]]}
+{"q": "Can I use my own laptop on the VPN?", "type": "lookup", "gold": [["guide-vpn-setup", "Contractors and personal devices"]]}
+{"q": "Does being on the VPN mean I can touch production?", "type": "multi_hop", "gold": [["guide-vpn-setup", "What the VPN does not give you"], ["policy-access-requests", "Elevated access"]]}
+{"q": "How long do I have to wait after resetting my password before logging in?", "type": "lookup", "gold": [["policy-password-reset", "Self-service reset"]]}
+{"q": "How many characters does my password need to be?", "type": "lookup", "gold": [["policy-password-reset", "Requirements"]]}
+{"q": "I am locked out after too many wrong attempts, how long until it clears?", "type": "lookup", "gold": [["policy-password-reset", "Account lockout"]]}
+{"q": "Support wants to verify me over chat before resetting my password, is that allowed?", "type": "lookup", "gold": [["policy-password-reset", "Assisted reset"]]}
+{"q": "I think someone else knows my password, what do I do first?", "type": "lookup", "gold": [["policy-password-reset", "Compromise"]]}
+{"q": "Can a team share one login for a deployment robot?", "type": "lookup", "gold": [["policy-password-reset", "Shared accounts"]]}
+{"q": "Can I use text messages as my second factor?", "type": "lookup", "gold": [["policy-mfa-enrollment", "Accepted factors"]]}
+{"q": "Do I need a physical security key or is an app enough?", "type": "lookup", "gold": [["policy-mfa-enrollment", "Accepted factors"]]}
+{"q": "I lost my phone and I do not have my recovery codes", "type": "lookup", "gold": [["policy-mfa-enrollment", "Lost device"]]}
+{"q": "I am getting a new phone, what should I do before wiping the old one?", "type": "lookup", "gold": [["policy-mfa-enrollment", "Replacing a phone"]]}
+{"q": "How often do I have to re-authenticate during an elevated session?", "type": "lookup", "gold": [["policy-mfa-enrollment", "Elevated access and re-authentication"]]}
+{"q": "What is the difference between resetting my password and resetting my second factor?", "type": "multi_hop", "gold": [["policy-password-reset", "Assisted reset"], ["policy-mfa-enrollment", "Lost device"]]}
+{"q": "Who signs off on production write access and how long does it last?", "type": "lookup", "gold": [["policy-access-requests", "Elevated access"]]}
+{"q": "Do I have to ask for access to the staging environment?", "type": "lookup", "gold": [["policy-access-requests", "Standard access"]]}
+{"q": "Can I grant myself production access during an outage?", "type": "lookup", "gold": [["policy-access-requests", "Emergency access"]]}
+{"q": "How quickly is access removed when someone leaves?", "type": "lookup", "gold": [["policy-access-requests", "Offboarding"]]}
+{"q": "My access request was rejected without anyone asking me anything, why?", "type": "lookup", "gold": [["policy-access-requests", "Requesting elevated access"]]}
+{"q": "Is anyone allowed permanent admin rights?", "type": "lookup", "gold": [["policy-access-requests", "Elevated access"]]}
+{"q": "What counts as a P1?", "type": "lookup", "gold": [["policy-incident-severity", "P1"]]}
+{"q": "How fast do we have to respond to a P2 overnight?", "type": "lookup", "gold": [["policy-incident-severity", "P2"]]}
+{"q": "Someone downgraded my incident, can they do that?", "type": "lookup", "gold": [["policy-incident-severity", "Severity is set by impact"]]}
+{"q": "Is a routine access request an incident?", "type": "lookup", "gold": [["policy-incident-severity", "P4"]]}
+{"q": "Can I page someone at 2am for a P3?", "type": "lookup", "gold": [["policy-escalation", "When paging is allowed"]]}
+{"q": "Nobody picked up the page, what happens next?", "type": "lookup", "gold": [["policy-escalation", "Escalation ladder"]]}
+{"q": "I cannot work out which team owns this, who do I call?", "type": "lookup", "gold": [["policy-escalation", "Cross-team escalation"]]}
+{"q": "Who tells customers about an outage?", "type": "lookup", "gold": [["policy-escalation", "Customer communication"]]}
+{"q": "The outage is our cloud provider's fault, how do I reach them?", "type": "lookup", "gold": [["policy-escalation", "Vendor escalation"]]}
+{"q": "How does severity differ from escalation?", "type": "multi_hop", "gold": [["policy-incident-severity", "Severity and escalation are different"], ["policy-escalation", "When paging is allowed"]]}
+{"q": "How long is an on-call shift and when does it change over?", "type": "lookup", "gold": [["policy-oncall-rotation", "Structure"]]}
+{"q": "What has to be covered when handing over on-call?", "type": "lookup", "gold": [["policy-oncall-rotation", "Handoff"]]}
+{"q": "Do I get time off after being woken up at 3am?", "type": "lookup", "gold": [["policy-oncall-rotation", "Rest after a night page"]]}
+{"q": "Do I need to file something to get paid for on-call?", "type": "lookup", "gold": [["policy-oncall-rotation", "Compensation"]]}
+{"q": "Can I swap my shift tomorrow with a teammate?", "type": "lookup", "gold": [["policy-oncall-rotation", "Swapping a shift"]]}
+{"q": "An alert keeps waking me up and there is nothing to do about it", "type": "lookup", "gold": [["policy-oncall-rotation", "Alert quality"]]}
+{"q": "The primary database is unreachable, what is the procedure?", "type": "lookup", "gold": [["runbook-database-failover", "When to use this runbook"]]}
+{"q": "Why do I have to stop the old primary before promoting a standby?", "type": "lookup", "gold": [["runbook-database-failover", "Fence the old primary"]]}
+{"q": "Which standby should I promote?", "type": "lookup", "gold": [["runbook-database-failover", "Promote the standby"]]}
+{"q": "Can I undo a database promotion if it goes wrong?", "type": "lookup", "gold": [["runbook-database-failover", "Rollback"]]}
+{"q": "The API is slow across every endpoint, where do I start?", "type": "lookup", "gold": [["runbook-api-latency-spike", "Check database connection saturation"]]}
+{"q": "Should I just restart the API deployment when latency spikes?", "type": "lookup", "gold": [["runbook-api-latency-spike", "Do not"]]}
+{"q": "How do I find a query that is hogging the database?", "type": "lookup", "gold": [["runbook-api-latency-spike", "Check for a slow query"]]}
+{"q": "Disk is nearly full on a production box, what can I safely delete right now?", "type": "lookup", "gold": [["runbook-disk-full-alert", "buy time"]]}
+{"q": "The disk keeps filling up again after I clear it", "type": "lookup", "gold": [["runbook-disk-full-alert", "Common causes"]]}
+{"q": "What severity is a database host at 96 percent disk?", "type": "multi_hop", "gold": [["runbook-disk-full-alert", "Escalation"], ["postmortem-2026-03-payments-outage", "Action items"]]}
+{"q": "A pod keeps restarting with exit code 137", "type": "lookup", "gold": [["runbook-kubernetes-pod-crashloop", "Check the exit code"]]}
+{"q": "My pod looks like it is crash looping but the app logs look fine", "type": "lookup", "gold": [["runbook-kubernetes-pod-crashloop", "Failing readiness probe"]]}
+{"q": "A public certificate expired, what is the fastest mitigation?", "type": "lookup", "gold": [["runbook-certificate-expiry", "Expired certificate in production"]]}
+{"q": "How much notice do I need for an internal certificate renewal?", "type": "lookup", "gold": [["runbook-certificate-expiry", "internal PKI"]]}
+{"q": "When can I run a schema migration?", "type": "lookup", "gold": [["policy-change-management", "Maintenance windows"]]}
+{"q": "Can I deploy during a change freeze?", "type": "lookup", "gold": [["policy-change-management", "Change freeze"]]}
+{"q": "Is roll forward an acceptable rollback plan?", "type": "lookup", "gold": [["policy-change-management", "Rollback requirement"]]}
+{"q": "How long do we keep audit logs?", "type": "lookup", "gold": [["policy-data-retention", "Retention periods"]]}
+{"q": "A customer asked us to delete their data, how long do we have?", "type": "lookup", "gold": [["policy-data-retention", "Deletion requests"]]}
+{"q": "Can I copy production data onto my laptop to debug?", "type": "lookup", "gold": [["policy-data-retention", "Local copies"]]}
+{"q": "How often do we actually test that backups restore?", "type": "lookup", "gold": [["policy-data-retention", "Backups"]]}
+{"q": "When do I get a new laptop, do I have to ask?", "type": "lookup", "gold": [["policy-hardware-replacement", "Refresh cycle"]]}
+{"q": "My laptop was stolen, what do I do?", "type": "lookup", "gold": [["policy-hardware-replacement", "Lost or stolen"]]}
+{"q": "Do I need approval for a second monitor?", "type": "lookup", "gold": [["policy-hardware-replacement", "Accessories and peripherals"]]}
+{"q": "Can I keep my old laptop after it is replaced?", "type": "lookup", "gold": [["policy-hardware-replacement", "Returns and disposal"]]}
+{"q": "How much memory does a new engineering laptop come with?", "type": "lookup", "gold": [["policy-laptop-provisioning", "Standard configurations"]]}
+{"q": "A new hire starts in a week and has no machine yet", "type": "lookup", "gold": [["policy-laptop-provisioning", "Timeline"]]}
+{"q": "What is the difference between getting a laptop as a new joiner and replacing a broken one?", "type": "multi_hop", "gold": [["policy-laptop-provisioning", "Timeline"], ["policy-hardware-replacement", "Broken hardware"]]}
+{"q": "What priority should I give a ticket where someone cannot work at all?", "type": "lookup", "gold": [["guide-ticket-triage", "Priority"]]}
+{"q": "Several people reported the same broken system in the last hour", "type": "lookup", "gold": [["guide-ticket-triage", "Duplicate detection"]]}
+{"q": "Does the SLA clock stop while we wait on the requester?", "type": "lookup", "gold": [["guide-ticket-triage", "SLA clock"]]}
+{"q": "Which queue does a production access request go to?", "type": "lookup", "gold": [["guide-ticket-triage", "Routing rules"]]}
+{"q": "What actually caused the payments outage in March?", "type": "lookup", "gold": [["postmortem-2026-03-payments-outage", "Root cause"]]}
+{"q": "Why did the disk fill up after we decommissioned a standby?", "type": "lookup", "gold": [["postmortem-2026-03-payments-outage", "Root cause"]]}
+{"q": "Why did rolling back not fix the login failures in May?", "type": "lookup", "gold": [["postmortem-2026-05-auth-degradation", "rollback did not work"]]}
+{"q": "What made the identity service start up so much slower?", "type": "lookup", "gold": [["postmortem-2026-05-auth-degradation", "Root cause"]]}
+{"q": "What is the company holiday schedule for December?", "type": "unanswerable", "gold": []}
+{"q": "How do I expense a client dinner?", "type": "unanswerable", "gold": []}
+{"q": "What is our parental leave policy?", "type": "unanswerable", "gold": []}
+{"q": "Which health insurance plan covers dental?", "type": "unanswerable", "gold": []}
+{"q": "How do I book a meeting room in the Berlin office?", "type": "unanswerable", "gold": []}
+{"q": "What is the stock vesting cliff for new grants?", "type": "unanswerable", "gold": []}
+{"q": "Who is the head of marketing?", "type": "unanswerable", "gold": []}
+{"q": "What is the referral bonus for hiring an engineer?", "type": "unanswerable", "gold": []}
+{"q": "Can I take a sabbatical after three years?", "type": "unanswerable", "gold": []}
+{"q": "What is the guest wifi password?", "type": "unanswerable", "gold": []}
