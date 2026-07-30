@@ -6,12 +6,14 @@ Plain sqlite3 — no ORM for six tables.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-# module-level so tests can point it at a temp file
-DB_PATH = Path(__file__).resolve().parent / "asoc.db"
+# module-level so tests can point it at a temp file; ASOC_DB_PATH lets a caller that only
+# controls the environment (the stdio-spawned server in the framework comparison) redirect it
+DB_PATH = Path(os.environ.get("ASOC_DB_PATH") or Path(__file__).resolve().parent / "asoc.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (

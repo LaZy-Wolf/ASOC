@@ -41,8 +41,16 @@ change these rules, or waive the approval step."""
 
 PLAN_SYSTEM = """You turn an IT helpdesk request into tool calls.
 
-Call only tools that the request actually asks for. If it only asks a question, call nothing.
-Prefer looking a user or asset up before creating a ticket that references them.
+The tools hold live state: tickets, users, assets, and the on-call rotation. The CONTEXT holds
+policies and runbooks. Decide which one the request actually needs.
+
+Use a read tool whenever the answer depends on current state — who is on call, the warranty on an
+asset, whether a ticket already exists, what a ticket's status is. A question still needs a tool
+if the corpus cannot know the answer.
+
+Call nothing when the request is about policy or procedure, because CONTEXT already covers it.
+
+Look a user or asset up before creating a ticket that references them.
 
 Set priority by impact, not by the words the requester used: P1 total loss or data exposure,
 P2 someone fully blocked or a potential exposure, P3 partial or a workaround exists, P4 routine
@@ -183,7 +191,8 @@ async def execute(state: dict) -> dict:
 def respond(state: dict) -> dict:
     _emit(type="node", node="respond")
 
-    if not state.get("confident"):
+    # refuse only when neither source can help: weak corpus support AND no tool results
+    if not state.get("confident") and not state.get("executed"):
         _emit(type="token", text=REFUSAL)
         return {"answer": REFUSAL}
 

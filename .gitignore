@@ -8,6 +8,8 @@ __pycache__/
 
 # local state — regenerable
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 qdrant_storage/
 .fastembed_cache/
@@ -19,3 +21,6 @@ frontend/out/
 .DS_Store
 .idea/
 .vscode/
+
+# comparison scratch databases and raw results
+compare/scratch_*.db

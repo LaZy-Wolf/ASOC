@@ -39,8 +39,19 @@ CONFIDENCE_THRESHOLD = -5.0
 TOP_N = 5
 
 ACTION_RE = re.compile(
-    r"\b(open|create|file|raise|log|update|close|assign|schedule|book)\b[^.?!]{0,40}"
-    r"\b(ticket|incident|window|meeting|request|access)\b",
+    r"\b(open|create|file|raise|log|update|close|assign|reassign|schedule|book|move|add|set|mark"
+    r"|cancel)\b[^.?!]{0,40}\b(ticket|incident|window|meeting|request|access|note|status|priority)\b",
+    re.I,
+)
+
+# A question can need a tool rather than the corpus: "who is on call", "warranty on LT-4388".
+# Those are recognisable by the entities they name — an email, a ticket, an asset tag, a rotation.
+# Without this, such questions were answered from runbooks alone and never reached the planner.
+ENTITY_RE = re.compile(
+    r"[\w.+-]+@[\w-]+\.\w+"  # email
+    r"|\btickets?\b"  # ticket, with or without an id
+    r"|\b[A-Z]{2}-\d{3,}\b"  # asset tag or change id: LT-4388, CHG-2001
+    r"|\bon[-\s]?call\b",
     re.I,
 )
 MULTI_HOP_RE = re.compile(
@@ -59,8 +70,19 @@ class SearchResult:
     doc_type: str | None
 
 
+def needs_tools(query: str) -> bool:
+    """Whether answering this plausibly requires the MCP tools rather than the corpus.
+
+    Deliberately over-inclusive: a false positive costs one planning call that returns no tools,
+    while a false negative means the request is silently answered from policy documents when the
+    user asked for the live state of a ticket. The planner sees the tool schemas and is the better
+    judge; this only decides whether to ask it.
+    """
+    return bool(ACTION_RE.search(query) or ENTITY_RE.search(query))
+
+
 def classify(query: str) -> Route:
-    if ACTION_RE.search(query):
+    if needs_tools(query):
         return "action"
     if MULTI_HOP_RE.search(query):
         return "multi_hop"

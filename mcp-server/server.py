@@ -12,10 +12,24 @@ Inspect:        npx @modelcontextprotocol/inspector python server.py
 
 from __future__ import annotations
 
+from typing import Literal
+
 import db
 from fastmcp import FastMCP
 
 mcp = FastMCP("asoc-itsm")
+
+# These annotations become `enum` in the advertised JSON schema, so a client cannot even propose an
+# invented value — the model is constrained at the protocol level rather than corrected afterwards.
+# Groq rejects a tool call that violates the schema, which is a cheaper failure than a bad write.
+# The runtime checks below stay as defence for callers that are not going through MCP.
+Category = Literal["access", "hardware", "network", "application", "incident", "request"]
+Priority = Literal["P1", "P2", "P3", "P4"]
+Status = Literal["open", "awaiting-approval", "in-progress", "resolved", "closed"]
+
+# "" means "leave unchanged" on the optional parameters
+OptionalPriority = Literal["", "P1", "P2", "P3", "P4"]
+OptionalStatus = Literal["", "open", "awaiting-approval", "in-progress", "resolved", "closed"]
 
 CATEGORIES = {"access", "hardware", "network", "application", "incident", "request"}
 PRIORITIES = {"P1", "P2", "P3", "P4"}
@@ -79,7 +93,9 @@ def get_asset(tag: str) -> dict:
 
 
 @mcp.tool
-def search_tickets(query: str = "", status: str = "", priority: str = "", limit: int = 20) -> list[dict]:
+def search_tickets(
+    query: str = "", status: OptionalStatus = "", priority: OptionalPriority = "", limit: int = 20
+) -> list[dict]:
     """Search tickets by free text over title and description, with optional filters.
 
     query    substring matched against title and description; empty matches everything
@@ -131,7 +147,7 @@ def find_oncall(team: str) -> list[dict]:
 
 @mcp.tool
 def create_ticket(
-    title: str, description: str, category: str, priority: str, requester_email: str
+    title: str, description: str, category: Category, priority: Priority, requester_email: str
 ) -> dict:
     """Create a support ticket. This writes to the ticketing system.
 
@@ -171,7 +187,12 @@ def create_ticket(
 
 
 @mcp.tool
-def update_ticket(ticket_id: int, status: str = "", priority: str = "", assignee_team: str = "") -> dict:
+def update_ticket(
+    ticket_id: int,
+    status: OptionalStatus = "",
+    priority: OptionalPriority = "",
+    assignee_team: str = "",
+) -> dict:
     """Change a ticket's status, priority, or owning team. This writes to the ticketing system.
 
     Pass only the fields you intend to change; empty values are left alone.

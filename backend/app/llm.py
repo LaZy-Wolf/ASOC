@@ -3,6 +3,10 @@
 Free-tier engineering: on a 429 the second Groq key is tried, then Gemini. Any other error
 propagates — rotating keys on a 400 just burns the next key on the same bad request. Rotation
 is abandoned once tokens have reached the client, since replaying would duplicate output.
+
+Known limit of that design: Groq enforces tokens-per-day per *organisation*, not per key. Two keys
+issued to the same org share one daily budget, so rotation buys headroom on the per-minute limit
+and nothing at all on the daily one. Exhausting TPD is what the Gemini fallback is actually for.
 """
 
 from __future__ import annotations
@@ -12,7 +16,7 @@ import logging
 from collections.abc import Iterator
 
 from google import genai
-from groq import Groq, RateLimitError
+from groq import BadRequestError, Groq, RateLimitError
 
 from app.config import settings
 
@@ -68,6 +72,12 @@ def stream_chat(system: str, user: str) -> Iterator[str]:
     yield from _gemini_stream(system, user)
 
 
+# A model occasionally emits a call that violates the tool schema — most often a numeric argument
+# quoted as a string, which Groq rejects with code tool_use_failed. Resampling fixes it, but only
+# at a non-zero temperature: retrying a greedy decode reproduces the identical bad output.
+PLAN_TEMPERATURES = (0.0, 0.4)
+
+
 def propose_tool_calls(system: str, user: str, tools: list[dict]) -> list[dict]:
     """Ask the model which tools to call. Returns [{name, arguments}], possibly empty.
 
@@ -76,29 +86,42 @@ def propose_tool_calls(system: str, user: str, tools: list[dict]) -> list[dict]:
     still applies — this is a single non-streaming call, so a 429 can be retried cleanly.
     """
     last: Exception | None = None
-    for index, key in enumerate(groq_keys()):
-        try:
-            message = (
-                Groq(api_key=key)
-                .chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                    tools=tools,
-                    tool_choice="auto",
-                    temperature=0,
-                )
-                .choices[0]
-                .message
-            )
-            return [
-                {"name": call.function.name, "arguments": json.loads(call.function.arguments)}
-                for call in (message.tool_calls or [])
-            ]
-        except RateLimitError as exc:
-            last = exc
-            log.warning("groq key %d rate limited during planning, rotating", index + 1)
 
-    raise RuntimeError("all groq keys rate limited while planning tool calls") from last
+    for index, key in enumerate(groq_keys()):
+        client = Groq(api_key=key)
+        rate_limited = False
+
+        for temperature in PLAN_TEMPERATURES:
+            try:
+                message = (
+                    client.chat.completions.create(
+                        model=GROQ_MODEL,
+                        messages=[
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user},
+                        ],
+                        tools=tools,
+                        tool_choice="auto",
+                        temperature=temperature,
+                    )
+                    .choices[0]
+                    .message
+                )
+                return [
+                    {"name": call.function.name, "arguments": json.loads(call.function.arguments)}
+                    for call in (message.tool_calls or [])
+                ]
+            except RateLimitError as exc:
+                last, rate_limited = exc, True
+                log.warning("groq key %d rate limited during planning, rotating", index + 1)
+                break
+            except BadRequestError as exc:
+                if "tool_use_failed" not in str(exc):
+                    raise
+                last = exc
+                log.warning("malformed tool call at temperature %s, resampling", temperature)
+
+        if not rate_limited:
+            continue
+
+    raise RuntimeError(f"planning failed after all keys and retries: {last}") from last

@@ -25,9 +25,16 @@ CHECKPOINT_DB = ROOT / "backend" / "checkpoints.db"
 
 
 def after_grade(state: AgentState) -> str:
-    if not state.get("confident"):
-        return "respond"
-    return "plan" if state.get("route") == "action" else "respond"
+    """Low corpus confidence must not veto the tool path.
+
+    The confidence score says whether the *corpus* can answer, and "who is on call right now" is
+    correctly absent from every runbook. Treating that as "we cannot answer" refused questions the
+    MCP tools answer trivially. So an action request reaches the planner regardless of score, and
+    only a non-action request with no corpus support is refused.
+    """
+    if state.get("route") == "action":
+        return "plan"
+    return "respond"
 
 
 def after_plan(state: AgentState) -> str:

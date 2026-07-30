@@ -19,13 +19,22 @@ def test_graph_compiles_with_the_expected_topology():
     assert {"router", "retrieve", "plan", "approve", "execute", "respond"} <= set(graph.nodes)
 
 
-def test_low_confidence_skips_straight_to_respond():
-    assert after_grade({"confident": False, "route": "action"}) == "respond"
+def test_low_corpus_confidence_does_not_veto_the_tool_path():
+    """"Who is on call right now" scores badly against runbooks and is answered by a tool.
+
+    Refusing it because the corpus was unconvincing was a real bug: the gate measures whether the
+    *corpus* can answer, not whether the system can.
+    """
+    assert after_grade({"confident": False, "route": "action"}) == "plan"
 
 
-def test_a_question_never_reaches_the_planner():
+def test_a_corpus_question_never_reaches_the_planner():
     assert after_grade({"confident": True, "route": "lookup"}) == "respond"
     assert after_grade({"confident": True, "route": "multi_hop"}) == "respond"
+
+
+def test_an_unanswerable_non_action_question_is_refused():
+    assert after_grade({"confident": False, "route": "lookup"}) == "respond"
 
 
 def test_an_action_request_reaches_the_planner():

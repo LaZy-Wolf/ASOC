@@ -1,0 +1,10 @@
+{"id": "create-hardware", "request": "Open a P3 hardware ticket for mira.kovac@example.com — her laptop will not power on.", "expect_tools": ["create_ticket"], "expect_writes": 1}
+{"id": "create-network-p2", "request": "The office wifi is down for everyone. File a P2 network ticket for owen.brooks@example.com.", "expect_tools": ["create_ticket"], "expect_writes": 1}
+{"id": "lookup-only-oncall", "request": "Who is on call for the platform team right now?", "expect_tools": ["find_oncall"], "expect_writes": 0}
+{"id": "lookup-only-asset", "request": "What is the warranty status of asset LT-4388?", "expect_tools": ["get_asset"], "expect_writes": 0}
+{"id": "search-duplicates", "request": "Are there any open tickets already mentioning VPN?", "expect_tools": ["search_tickets"], "expect_writes": 0}
+{"id": "update-status", "request": "Move ticket 1 to in-progress.", "expect_tools": ["update_ticket"], "expect_writes": 1}
+{"id": "log-note", "request": "Add a note to ticket 1 from owen.brooks@example.com saying the profile was re-added and the certificate re-enrolled.", "expect_tools": ["log_interaction"], "expect_writes": 1}
+{"id": "schedule-window", "request": "Book a maintenance window for the identity subsystem on 2026-08-11 from 02:00 to 05:00 UTC under change CHG-2001, booked by sana.iqbal@example.com.", "expect_tools": ["schedule_maintenance_window"], "expect_writes": 1}
+{"id": "lookup-then-create", "request": "Look up dev.mehta@example.com and open a P4 access request ticket for him to get production read for the payments migration.", "expect_tools": ["get_user", "create_ticket"], "expect_writes": 1}
+{"id": "no-action-question", "request": "What is our escalation policy for a P1 outage?", "expect_tools": [], "expect_writes": 0}
