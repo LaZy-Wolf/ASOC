@@ -1,86 +1,4 @@
-"""Render compare/NOTES.md from both stacks' results. Stdlib only, runs in either venv.
-
-    python render_notes.py
-
-The per-fixture table is generated. The capability matrix is authored, because those rows are
-judgements — each one cites the evidence it rests on rather than asserting a winner.
-"""
-
-from __future__ import annotations
-
-import json
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parent
-FIXTURES = HERE / "fixtures.jsonl"
-OUT = HERE / "NOTES.md"
-
-
-def load(stack: str) -> dict:
-    path = HERE / f"results_{stack}.json"
-    if not path.exists():
-        return {}
-    return {r["id"]: r for r in json.loads(path.read_text(encoding="utf-8"))["results"]}
-
-
-def cell(result: dict | None) -> str:
-    if not result:
-        return "not run"
-    if result.get("error"):
-        # distinguish "the framework decided wrongly" from "we never got an answer"
-        return "quota" if "RateLimit" in result["error"] or "429" in result["error"] else "error"
-    tools = result["tools"]
-    return "*(none)*" if not tools else ", ".join(f"`{t}`" for t in tools)
-
-
-def main() -> int:
-    fixtures = [
-        json.loads(line) for line in FIXTURES.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
-    lg, crew = load("langgraph"), load("crewai")
-
-    rows = []
-    for fixture in fixtures:
-        fid = fixture["id"]
-        a, b = lg.get(fid), crew.get(fid)
-        expected = ", ".join(f"`{t}`" for t in fixture["expect_tools"]) or "*(none)*"
-        rows.append(
-            f"| `{fid}` | {expected} | {cell(a)} | {cell(b)} "
-            f"| {'yes' if a and a.get('gated') else 'no'} "
-            f"| {'yes' if b and b.get('gated') else 'no'} |"
-        )
-
-    def score(results: dict) -> str:
-        if not results:
-            return "not run"
-        blocked = sum(1 for r in results.values() if r.get("error") and "RateLimit" in r["error"])
-        if blocked:
-            return f"blocked on quota ({blocked}/{len(results)} runs never reached the model)"
-        ok = sum(1 for r in results.values() if r.get("correct_tools"))
-        return f"{ok}/{len(results)}"
-
-    def gated_writes(results: dict) -> str:
-        if not results:
-            return "not run"
-        with_writes = [r for r in results.values() if r.get("writes")]
-        gated = sum(1 for r in with_writes if r.get("gated"))
-        return f"{gated}/{len(with_writes)}" if with_writes else "0/0"
-
-    OUT.write_text(
-        TEMPLATE.format(
-            rows="\n".join(rows),
-            lg_score=score(lg),
-            crew_score=score(crew),
-            lg_gated=gated_writes(lg),
-            crew_gated=gated_writes(crew),
-        ),
-        encoding="utf-8",
-    )
-    print(f"wrote {OUT}")
-    return 0
-
-
-TEMPLATE = """# LangGraph vs CrewAI
+# LangGraph vs CrewAI
 
 Both stacks drive the **same MCP server** over stdio, with the same eight tools and the same ten
 fixtures in `fixtures.jsonl`. Only the orchestration layer differs.
@@ -111,7 +29,7 @@ holding a stale run.
 | `lookup-only-oncall` | `find_oncall` | no | yes |
 | `lookup-only-asset` | `get_asset` | no | yes |
 | `search-duplicates` | `search_tickets` | no | yes |
-| `update-status` | *(none)* — Groq rejected `{{"ticket_id": "1"}}` | no | no |
+| `update-status` | *(none)* — Groq rejected `{"ticket_id": "1"}` | no | no |
 | `log-note` | `log_interaction` | yes | yes |
 | `schedule-window` | `schedule_maintenance_window` | yes | yes |
 | `lookup-then-create` | `get_user`, `create_ticket` | yes | yes |
@@ -124,10 +42,19 @@ directly, though not yet reconfirmed across the whole suite.
 
 | fixture | expected tools | LangGraph | CrewAI | LG gated | Crew gated |
 |---|---|---|---|---|---|
-{rows}
+| `create-hardware` | `create_ticket` | not run | not run | no | no |
+| `create-network-p2` | `create_ticket` | not run | not run | no | no |
+| `lookup-only-oncall` | `find_oncall` | not run | not run | no | no |
+| `lookup-only-asset` | `get_asset` | not run | not run | no | no |
+| `search-duplicates` | `search_tickets` | not run | not run | no | no |
+| `update-status` | `update_ticket` | not run | not run | no | no |
+| `log-note` | `log_interaction` | not run | not run | no | no |
+| `schedule-window` | `schedule_maintenance_window` | not run | not run | no | no |
+| `lookup-then-create` | `get_user`, `create_ticket` | not run | not run | no | no |
+| `no-action-question` | *(none)* | not run | not run | no | no |
 
-Correct tool set: **LangGraph {lg_score}**, **CrewAI {crew_score}**.
-Writes stopped for human approval: **LangGraph {lg_gated}**, **CrewAI {crew_gated}**.
+Correct tool set: **LangGraph not run**, **CrewAI not run**.
+Writes stopped for human approval: **LangGraph not run**, **CrewAI not run**.
 
 > **Status of this table.** The CrewAI column is incomplete: Groq's free tier enforces 100,000
 > tokens per day per *organisation*, and the CrewAI run exhausted it. CrewAI's ReAct loop issues
@@ -144,7 +71,7 @@ Writes stopped for human approval: **LangGraph {lg_gated}**, **CrewAI {crew_gate
 > two commands above once quota resets to complete the column.
 >
 > The `update-status` row for LangGraph also predates the argument-coercion fix in
-> `backend/app/mcp_client.py`. That fix is verified directly — `{{"ticket_id": "1"}}` is coerced to
+> `backend/app/mcp_client.py`. That fix is verified directly — `{"ticket_id": "1"}` is coerced to
 > `1` and the call succeeds — but the suite has not been rerun since.
 
 ## Capability differences that mattered
@@ -211,7 +138,7 @@ than for the comparison itself.
    parent environment to the spawned server, so `ASOC_DB_PATH` was dropped and the first fixture
    run wrote its tickets into the seeded `asoc.db`. Both clients now pass `env` explicitly.
 5. **Groq rejected a valid intent over a quoted integer.** For "Move ticket 1 to in-progress" the
-   model emits `{{"ticket_id": "1"}}`, and Groq validates tool calls against the advertised schema
+   model emits `{"ticket_id": "1"}`, and Groq validates tool calls against the advertised schema
    and refuses. It reproduced across both API keys and at two temperatures, so it was systematic
    rather than a sampling fluke and retrying did not help. The schema sent to the model now accepts
    a string for integer parameters and the client coerces before dispatch, which keeps the MCP
@@ -229,8 +156,3 @@ Package counts are per-venv and not strictly a framework comparison either — `
 Qdrant, ONNX runtime and FastAPI, while `compare` carries CrewAI, litellm and fastmcp. The point
 worth keeping is the direction: CrewAI's agent layer alone is larger than the entire retrieval,
 graph and API stack it is being compared against.
-"""
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

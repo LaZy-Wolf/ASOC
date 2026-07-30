@@ -17,15 +17,22 @@ from crewai import Agent, Crew, LLM, Process, Task
 
 from mcp_tools import CALLS, load_tools
 
-MODEL = "groq/llama-3.3-70b-versatile"
+# Groq matches the LangGraph side, which is the fair comparison. ASOC_CREW_MODEL=gemini switches
+# to a CrewAI *native* provider — useful both when Groq's daily cap is spent and as a check that
+# the cache_breakpoint problem below really is confined to the litellm path.
+MODELS = {
+    "groq": ("groq/llama-3.3-70b-versatile", "GROQ_API_KEY"),
+    "gemini": ("gemini/gemini-2.0-flash", "GEMINI_API_KEY"),
+}
+PROVIDER = os.environ.get("ASOC_CREW_MODEL", "groq")
 
 
-def _api_key() -> str:
-    """Read GROQ_API_KEY straight out of the repo .env — no pydantic-settings in this venv."""
+def _env_value(name: str) -> str:
+    """Read a key straight out of the repo .env — no pydantic-settings in this venv."""
     for line in (Path(__file__).resolve().parents[1] / ".env").read_text(encoding="utf-8").splitlines():
-        if line.startswith("GROQ_API_KEY="):
+        if line.startswith(f"{name}="):
             return line.split("=", 1)[1].strip()
-    raise RuntimeError("GROQ_API_KEY not found in .env")
+    raise RuntimeError(f"{name} not found in .env")
 
 
 def _patch_cache_breakpoint() -> None:
@@ -61,9 +68,12 @@ def _patch_cache_breakpoint() -> None:
 
 def build_crew(human_input: bool = False) -> Crew:
     """The crew. `human_input=True` is CrewAI's approval story — a blocking stdin prompt."""
-    os.environ["GROQ_API_KEY"] = _api_key()
+    model, key_name = MODELS[PROVIDER]
+    os.environ[key_name] = _env_value(key_name)
+    if PROVIDER == "gemini":
+        os.environ.setdefault("GOOGLE_API_KEY", os.environ[key_name])
     _patch_cache_breakpoint()
-    llm = LLM(model=MODEL, temperature=0)
+    llm = LLM(model=model, temperature=0)
     tools = load_tools()
 
     dispatcher = Agent(

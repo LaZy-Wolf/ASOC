@@ -11,7 +11,7 @@
 | P2 MCP server | done | 13 tests pass, incl. a real MCP protocol round trip |
 | P3 production RAG | done | `eval/RESULTS.md`: recall@5 0.864 -> 0.932, refusal recall 0.900 |
 | P4 orchestration + HITL | done | write paused across a real process restart, then approved by a different PID |
-| P5 CrewAI comparison | not started | |
+| P5 CrewAI comparison | mostly done | `compare/NOTES.md` + README; fixture table blocked on free-tier daily caps |
 | P6 voice | not started | |
 
 **Deviations from the plan as written, and why:**

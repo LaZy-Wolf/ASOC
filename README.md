@@ -185,8 +185,12 @@ plan.md              build plan, phase status, and every decision that changed o
 - **Local only.** No deploy target. Qdrant plus the ONNX models do not fit a 512MB free instance,
   and the point of the project is the pipeline, not the hosting.
 - **Groq's daily token limit is per organisation, not per key.** Two keys from one org share one
-  budget, so rotation helps the per-minute limit and not the daily one. The Gemini fallback is what
-  covers the daily cap.
+  budget, so rotation helps the per-minute limit and not the daily one — a real limitation of the
+  rotation design, found by exhausting it.
+- **The Gemini fallback needs a key with quota.** The key used during development reports
+  `generate_content_free_tier_requests, limit: 0` — no free-tier allowance provisioned — so the
+  fallback path has never actually served a request. It is wired and logged but unproven; check
+  your key at https://ai.dev/rate-limit before relying on it.
 - **Reranking is ~1.1s on CPU.** That is the honest cost of a 278M cross-encoder without a GPU.
   `RERANK_CANDIDATES` in `retrieve.py` is the latency dial, and the sweep behind the chosen value
   of 8 is in the comments there.
